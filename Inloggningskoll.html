@@ -1,0 +1,362 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>Inloggningskoll</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<style>
+/* Layout: en smal liggande lista, sorterad efter nästa förfallodatum. Sammanfattning överst, formulär, sedan en rad per sida. */
+:root {
+  --bg: #EEF2F4;
+  --surface: #FFFFFF;
+  --fg: #13222C;
+  --muted: #586873;
+  --line: #D3DCE1;
+  --track: #DCE4E8;
+  --accent: #0B6E6A;
+  --accent-fg: #FFFFFF;
+  --ok: #1F7A4A;
+  --ok-bg: #E1F2E8;
+  --warn: #8F5400;
+  --warn-bg: #FBEBCF;
+  --bad: #B3261E;
+  --bad-bg: #FBE0DD;
+  --font-body: "Schibsted Grotesk", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0F1A21; --surface: #16252E; --fg: #E6EEF2; --muted: #93A5B0; --line: #28404C; --track: #28404C;
+    --accent: #4FD1C5; --accent-fg: #062826;
+    --ok: #5FD08F; --ok-bg: #153626; --warn: #F0B450; --warn-bg: #3A2D10; --bad: #FF8A80; --bad-bg: #432220;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0F1A21; --surface: #16252E; --fg: #E6EEF2; --muted: #93A5B0; --line: #28404C; --track: #28404C;
+  --accent: #4FD1C5; --accent-fg: #062826;
+  --ok: #5FD08F; --ok-bg: #153626; --warn: #F0B450; --warn-bg: #3A2D10; --bad: #FF8A80; --bad-bg: #432220;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body {
+  background: var(--bg); color: var(--fg);
+  font-family: var(--font-body); font-size: 16px; line-height: 1.5;
+  padding-block: 28px 56px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+}
+.wrap { max-width: 720px; margin: 0 auto; display: flex; flex-direction: column; gap: 24px; }
+h1 { font-size: clamp(1.9rem, 6vw, 2.6rem); line-height: 1.05; letter-spacing: -0.02em; margin: 0; font-weight: 700; text-wrap: balance; }
+.lede { color: var(--muted); margin: 8px 0 0; max-width: 60ch; }
+.mono { font-family: var(--font-mono); font-variant-numeric: tabular-nums; }
+
+.summary { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.stat { background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 12px 14px; min-width: 0; }
+.stat b { display: block; font-family: var(--font-mono); font-size: 1.7rem; line-height: 1.1; font-variant-numeric: tabular-nums; }
+.stat span { font-size: 0.8rem; color: var(--muted); }
+.stat.bad b { color: var(--bad); } .stat.warn b { color: var(--warn); } .stat.ok b { color: var(--ok); }
+
+form.add { background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 16px; display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+form.add h2 { grid-column: 1 / -1; margin: 0; font-size: 1rem; }
+.field { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.field.wide { grid-column: 1 / -1; }
+label, .label { font-size: 0.78rem; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; color: var(--muted); }
+input, select {
+  font: inherit; color: var(--fg); background: var(--bg);
+  border: 1px solid var(--line); border-radius: 6px; padding: 9px 10px; min-width: 0; width: 100%;
+}
+input:focus-visible, select:focus-visible, button:focus-visible, a:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.hint { grid-column: 1 / -1; font-size: 0.82rem; color: var(--muted); margin: 0; }
+.err { grid-column: 1 / -1; font-size: 0.88rem; color: var(--bad); margin: 0; }
+
+button, .btn {
+  font: inherit; font-weight: 600; font-size: 0.92rem; cursor: pointer; text-decoration: none; text-align: center;
+  border-radius: 6px; padding: 8px 14px; border: 1px solid var(--line); background: var(--surface); color: var(--fg);
+  display: inline-flex; align-items: center; justify-content: center; line-height: 1.2;
+}
+button.primary, .btn.primary { background: var(--accent); border-color: var(--accent); color: var(--accent-fg); }
+button.ghost { border-color: transparent; color: var(--muted); background: transparent; font-weight: 500; }
+button.danger { color: var(--bad); border-color: var(--bad); }
+form.add button[type="submit"] { grid-column: 1 / -1; justify-self: start; padding: 10px 18px; }
+
+.list { display: flex; flex-direction: column; border: 1px solid var(--line); border-radius: 8px; background: var(--surface); overflow: hidden; }
+.row { padding: 14px 16px; display: grid; gap: 10px; border-top: 1px solid var(--line); }
+.row:first-child { border-top: 0; }
+.row-top { display: flex; justify-content: space-between; gap: 12px; align-items: flex-start; flex-wrap: wrap; }
+.site { min-width: 0; }
+.site strong { display: block; font-size: 1.05rem; overflow-wrap: anywhere; }
+.site small { color: var(--muted); font-family: var(--font-mono); font-size: 0.78rem; overflow-wrap: anywhere; }
+.pill { font-family: var(--font-mono); font-size: 0.8rem; font-weight: 600; padding: 3px 9px; border-radius: 999px; white-space: nowrap; }
+.pill.ok { background: var(--ok-bg); color: var(--ok); }
+.pill.warn { background: var(--warn-bg); color: var(--warn); }
+.pill.bad { background: var(--bad-bg); color: var(--bad); }
+.track { height: 6px; border-radius: 3px; background: var(--track); overflow: hidden; }
+.track i { display: block; height: 100%; border-radius: 3px; }
+.track i.ok { background: var(--ok); } .track i.warn { background: var(--warn); } .track i.bad { background: var(--bad); }
+.meta { display: flex; flex-wrap: wrap; gap: 8px 18px; align-items: flex-end; }
+.meta .field { flex: 0 1 auto; }
+.meta input[type="date"] { width: auto; padding: 6px 8px; font-family: var(--font-mono); font-size: 0.88rem; }
+.meta select { width: auto; padding: 6px 8px; font-size: 0.88rem; }
+.due { font-family: var(--font-mono); font-size: 0.88rem; font-variant-numeric: tabular-nums; padding-block: 6px; }
+.actions { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.empty { padding: 32px 20px; text-align: center; color: var(--muted); }
+.empty strong { display: block; color: var(--fg); font-size: 1.05rem; margin-bottom: 4px; }
+.note { font-size: 0.82rem; color: var(--muted); margin: 0; }
+@media (max-width: 480px) {
+  form.add { grid-template-columns: 1fr; }
+  .summary { gap: 6px; }
+  .stat { padding: 10px; }
+}
+@media (prefers-reduced-motion: no-preference) { .track i { transition: width 0.3s ease; } }
+</style>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&family=Schibsted+Grotesk:wght@400;500;600;700&display=swap">
+
+<div class="wrap">
+  <header>
+    <h1>Inloggningskoll</h1>
+    <p class="lede">Lägg in sidorna du måste logga in på med jämna mellanrum så att kontot inte stängs. Sidan håller koll på datumen och öppnar inloggningen åt dig när det är dags. Själva inloggningen gör du.</p>
+  </header>
+
+  <section class="summary" aria-label="Sammanfattning">
+    <div class="stat bad"><b id="n-bad">0</b><span>Försenade</span></div>
+    <div class="stat warn"><b id="n-warn">0</b><span>Inom 30 dagar</span></div>
+    <div class="stat ok"><b id="n-ok">0</b><span>I tid</span></div>
+  </section>
+
+  <form class="add" id="add-form" autocomplete="off">
+    <h2>Lägg till en sida</h2>
+    <div class="field">
+      <label for="f-name">Namn</label>
+      <input id="f-name" type="text" placeholder="t.ex. Elbolaget" maxlength="80">
+    </div>
+    <div class="field">
+      <label for="f-url">Adress till inloggningen</label>
+      <input id="f-url" type="text" inputmode="url" placeholder="exempel.se/logga-in" maxlength="500" required>
+    </div>
+    <div class="field">
+      <label for="f-months">Logga in var</label>
+      <select id="f-months">
+        <option value="1">1:a månad</option>
+        <option value="3">3:e månad</option>
+        <option value="6" selected>6:e månad</option>
+        <option value="12">12:e månad</option>
+      </select>
+    </div>
+    <div class="field">
+      <label for="f-last">Senast inloggad</label>
+      <input id="f-last" type="date" required>
+    </div>
+    <p class="hint">Spara aldrig lösenord här. Sidan lagrar bara namn, adress och datum.</p>
+    <p class="err" id="f-err" hidden></p>
+    <button class="primary" type="submit">Lägg till</button>
+  </form>
+
+  <section>
+    <div class="list" id="list" aria-live="polite"></div>
+  </section>
+
+  <p class="note" id="storage-note"></p>
+</div>
+
+<script>
+(function () {
+  var LS_KEY = "inloggningskoll-v1";
+  var sites = [];
+  var col = null;           // db-samling när lagring i kontot fungerar
+  var loaded = false;
+  var confirming = {};
+  var slowTimer = null;
+  var slow = false;
+
+  function $(s) { return document.querySelector(s); }
+  function h(tag, attrs, kids) {
+    var el = document.createElement(tag);
+    Object.keys(attrs || {}).forEach(function (k) {
+      if (k === "text") el.textContent = attrs[k];
+      else if (k === "class") el.className = attrs[k];
+      else if (k.indexOf("on") === 0) el.addEventListener(k.slice(2), attrs[k]);
+      else if (attrs[k] !== false && attrs[k] != null) el.setAttribute(k, attrs[k]);
+    });
+    (kids || []).forEach(function (c) { if (c) el.appendChild(typeof c === "string" ? document.createTextNode(c) : c); });
+    return el;
+  }
+
+  /* ---------- datum ---------- */
+  function pad(n) { return (n < 10 ? "0" : "") + n; }
+  function iso(d) { return d.getFullYear() + "-" + pad(d.getMonth() + 1) + "-" + pad(d.getDate()); }
+  function parse(s) { var p = String(s).split("-"); return new Date(+p[0], +p[1] - 1, +p[2]); }
+  function today() { var d = new Date(); return new Date(d.getFullYear(), d.getMonth(), d.getDate()); }
+  function addMonths(d, m) {
+    var t = new Date(d.getFullYear(), d.getMonth() + m, 1);
+    var last = new Date(t.getFullYear(), t.getMonth() + 1, 0).getDate();
+    t.setDate(Math.min(d.getDate(), last));
+    return t;
+  }
+  function daysBetween(a, b) { return Math.round((b - a) / 86400000); }
+  function fmt(d) { return d.toLocaleDateString("sv-SE", { day: "numeric", month: "short", year: "numeric" }); }
+
+  function info(s) {
+    var last = parse(s.last), due = addMonths(last, s.months), t = today();
+    var left = daysBetween(t, due), total = Math.max(1, daysBetween(last, due));
+    var used = Math.min(1, Math.max(0, daysBetween(last, t) / total));
+    var level = left < 0 ? "bad" : left <= 30 ? "warn" : "ok";
+    var label = left < 0 ? "Försenad " + (-left) + (left === -1 ? " dag" : " dagar")
+      : left === 0 ? "Idag"
+      : left === 1 ? "Imorgon"
+      : "Om " + left + " dagar";
+    return { due: due, left: left, used: used, level: level, label: label };
+  }
+
+  /* ---------- lagring ---------- */
+  function localLoad() {
+    try { var v = JSON.parse(localStorage.getItem(LS_KEY) || "[]"); return Array.isArray(v) ? v : []; } catch (e) { return []; }
+  }
+  function localSave() { try { localStorage.setItem(LS_KEY, JSON.stringify(sites)); } catch (e) {} }
+
+  function showErr(msg) {
+    var el = $("#f-err");
+    el.textContent = msg || "";
+    el.hidden = !msg;
+  }
+
+  function save(site) {
+    var i = sites.findIndex(function (x) { return x.id === site.id; });
+    if (i >= 0) sites[i] = site; else sites.push(site);
+    render();
+    if (col) {
+      return col.doc(site.id).set(site).catch(function () { showErr("Det gick inte att spara i ditt konto. Försök igen."); });
+    }
+    localSave();
+    return Promise.resolve();
+  }
+  function remove(id) {
+    sites = sites.filter(function (x) { return x.id !== id; });
+    delete confirming[id];
+    render();
+    if (col) return col.doc(id).delete().catch(function () { showErr("Det gick inte att ta bort. Försök igen."); });
+    localSave();
+    return Promise.resolve();
+  }
+
+  /* ---------- rendering ---------- */
+  function safeUrl(u) { return /^https?:\/\//i.test(u) ? u : null; }
+  function host(u) { try { return new URL(u).host.replace(/^www\./, ""); } catch (e) { return u; } }
+
+  function render() {
+    var list = $("#list");
+    var counts = { bad: 0, warn: 0, ok: 0 };
+    var rows = sites.map(function (s) { return { s: s, i: info(s) }; })
+      .sort(function (a, b) { return a.i.due - b.i.due; });
+    rows.forEach(function (r) { counts[r.i.level]++; });
+    $("#n-bad").textContent = counts.bad;
+    $("#n-warn").textContent = counts.warn;
+    $("#n-ok").textContent = counts.ok;
+
+    list.textContent = "";
+    if (!loaded) {
+      list.appendChild(h("div", { class: "empty" }, [h("strong", { text: slow ? "Det tar längre tid än vanligt" : "Laddar dina sidor" }),
+        h("span", { text: slow ? "Sparade sidor kan saknas eller vara gamla tills anslutningen fungerar." : "" })]));
+      return;
+    }
+    if (!rows.length) {
+      list.appendChild(h("div", { class: "empty" }, [h("strong", { text: "Inga sidor tillagda än" }),
+        h("span", { text: "Fyll i formuläret ovan. Börja med den sida du loggade in på senast." })]));
+      return;
+    }
+    rows.forEach(function (r) {
+      var s = r.s, i = r.i, url = safeUrl(s.url);
+      var dateInput = h("input", { type: "date", id: "d-" + s.id, value: s.last, max: iso(today()),
+        onchange: function (e) { if (e.target.value) { s.last = e.target.value; save(s); } } });
+      var monthSel = h("select", { id: "m-" + s.id, onchange: function (e) { s.months = +e.target.value; save(s); } },
+        [1, 3, 6, 12].map(function (m) { return h("option", { value: m, selected: m === s.months ? "selected" : false, text: m + (m === 1 ? " månad" : " månader") }); }));
+      var actions = [];
+      if (url) actions.push(h("a", { class: "btn primary", href: url, target: "_blank", rel: "noopener noreferrer", text: "Öppna inloggning" }));
+      actions.push(h("button", { type: "button", text: "Jag loggade in nu", onclick: function () { s.last = iso(today()); save(s); } }));
+      if (confirming[s.id]) {
+        actions.push(h("button", { type: "button", class: "danger", text: "Ta bort", onclick: function () { remove(s.id); } }));
+        actions.push(h("button", { type: "button", class: "ghost", text: "Avbryt", onclick: function () { delete confirming[s.id]; render(); } }));
+      } else {
+        actions.push(h("button", { type: "button", class: "ghost", text: "Ta bort…", onclick: function () { confirming[s.id] = true; render(); } }));
+      }
+      list.appendChild(h("div", { class: "row" }, [
+        h("div", { class: "row-top" }, [
+          h("div", { class: "site" }, [h("strong", { text: s.name }), h("small", { text: host(s.url) })]),
+          h("span", { class: "pill " + i.level, text: i.label })
+        ]),
+        h("div", { class: "track", role: "img", "aria-label": Math.round(i.used * 100) + " procent av tiden har gått" },
+          [h("i", { class: i.level, style: "width:" + Math.round(i.used * 100) + "%" })]),
+        h("div", { class: "meta" }, [
+          h("div", { class: "field" }, [h("label", { for: "d-" + s.id, text: "Senast inloggad" }), dateInput]),
+          h("div", { class: "field" }, [h("label", { for: "m-" + s.id, text: "Intervall" }), monthSel]),
+          h("div", { class: "field" }, [h("span", { class: "label", text: "Nästa inloggning" }), h("span", { class: "due", text: fmt(i.due) })])
+        ]),
+        h("div", { class: "actions" }, actions)
+      ]));
+    });
+  }
+
+  /* ---------- formulär ---------- */
+  $("#f-last").value = iso(today());
+  $("#f-last").max = iso(today());
+  $("#add-form").addEventListener("submit", function (e) {
+    e.preventDefault();
+    showErr("");
+    var raw = $("#f-url").value.trim();
+    if (!raw) return;
+    if (!/^[a-z][a-z0-9+.-]*:\/\//i.test(raw)) raw = "https://" + raw;
+    var u;
+    try { u = new URL(raw); } catch (err) { showErr("Adressen ser inte ut att stämma. Kontrollera den och försök igen."); return; }
+    if (u.protocol !== "https:" && u.protocol !== "http:") { showErr("Bara adresser som börjar med http eller https fungerar."); return; }
+    var last = $("#f-last").value || iso(today());
+    var site = {
+      id: "s" + Date.now().toString(36) + Math.random().toString(36).slice(2, 7),
+      name: $("#f-name").value.trim() || host(u.href),
+      url: u.href,
+      months: +$("#f-months").value,
+      last: last,
+      created: Date.now()
+    };
+    save(site);
+    $("#f-name").value = "";
+    $("#f-url").value = "";
+    $("#f-name").focus();
+  });
+
+  /* ---------- start ---------- */
+  function startLocal(note) {
+    sites = localLoad();
+    loaded = true;
+    $("#storage-note").textContent = note;
+    render();
+  }
+
+  render();
+  slowTimer = setTimeout(function () { slow = true; if (!loaded) render(); }, 10000);
+
+  var cl = window.claude;
+  if (!cl || !cl.use) { clearTimeout(slowTimer); startLocal("Dina sidor sparas bara i den här webbläsaren."); return; }
+
+  Promise.all([cl.use("db"), cl.use("user")]).then(function (res) {
+    var db = res[0], user = res[1];
+    if (!db || !user) { clearTimeout(slowTimer); startLocal("Dina sidor sparas bara i den här webbläsaren."); return; }
+    return user.id().then(function (uid) {
+      if (!uid) { clearTimeout(slowTimer); startLocal("Dina sidor sparas bara i den här webbläsaren."); return; }
+      col = db.collection("data/users/" + uid);
+      $("#storage-note").textContent = "Dina sidor sparas privat i ditt konto. Ingen annan ser dem.";
+      col.onSnapshot(function (snap) {
+        clearTimeout(slowTimer);
+        slow = false;
+        sites = snap.docs.map(function (d) { var v = d.data() || {}; v.id = d.id; return v; })
+          .filter(function (v) { return v.url && v.last && v.months; });
+        loaded = true;
+        render();
+      }, function () {
+        clearTimeout(slowTimer);
+        col = null;
+        startLocal("Kontot går inte att nå just nu. Sidor sparas bara i den här webbläsaren.");
+      });
+    });
+  }).catch(function () { clearTimeout(slowTimer); startLocal("Dina sidor sparas bara i den här webbläsaren."); });
+})();
+</script>
+
+</body></html>
